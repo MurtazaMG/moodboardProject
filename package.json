@@ -1,0 +1,32 @@
+{
+  "name": "moodboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^3.14.0",
+    "aws": "^0.0.3-2",
+    "bulma": "^0.9.4",
+    "lodash": "^4.17.21",
+    "next": "12.1.6",
+    "pg": "^8.7.3",
+    "psql": "^0.0.1",
+    "react": "18.1.0",
+    "react-dom": "18.1.0",
+    "react-draggable": "^4.4.5",
+    "semantic-ui-css": "^2.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.35",
+    "@types/react": "^18.0.9",
+    "eslint": "8.15.0",
+    "eslint-config-next": "12.1.6",
+    "prisma": "^3.14.0",
+    "typescript": "^4.7.2"
+  }
+}
