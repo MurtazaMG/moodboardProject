@@ -92,7 +92,7 @@ const Home: NextPage = ({ data }) => {
       {modals.map((mb) => {
         return <Modal key={mb.id} modalControl={resetModals} dataImgs={data} toOpen={mb.status} modals={modals} />
       })}
-      <Draggable><h1>To get the best experience, use a consistent screen size </h1></Draggable>
+      
 
     </div>
   );
@@ -107,13 +107,17 @@ export async function getStaticProps() {
 }
 
 function Modal({ modalControl, dataImgs, toOpen, modals }) {
+
   const [drop, setDrop] = useState(false);
   const [imprt, setImport] = useState(false);
+
   const [texts, setTexts] = useReducer(addToBoard, []);
   const [imgs, setImgs] = useReducer(addImgToBoard, []);
   const [swatches, setSwatches] = useReducer(addToBoard, []);
-  const control = { setImgs: setImgs, setTexts: setTexts, setSwatches: setSwatches };
-  const access = { imgs: imgs, texts: texts, swatches: swatches };
+  const [shapes, setShapes] = useReducer(addShapetoBoard, []);
+
+  const control = { setImgs: setImgs, setTexts: setTexts, setSwatches: setSwatches, setShapes: setShapes };
+  const access = { imgs: imgs, texts: texts, swatches: swatches, shapes: shapes };
 
   function addImgToBoard(state, action) {
     switch (action.type) {
@@ -122,6 +126,7 @@ function Modal({ modalControl, dataImgs, toOpen, modals }) {
         action.payload.img.y = Math.floor(Math.random() * 250);
         action.payload.img.width = 150;
         action.payload.img.uniqueId = makeid(6);
+        
         return [
           ...state,
           structuredClone(action.payload.img)
@@ -160,23 +165,77 @@ function Modal({ modalControl, dataImgs, toOpen, modals }) {
         return []
     }
   }
+  function addShapetoBoard(state, action){
+    switch (action.type) {
+      case 'ADD SHAPE':
+        const temp = {id: makeid(7), type: action.payload, styl: undefined, handleResize: null, width: 55, height: 55, x: Math.floor(Math.random() * 400), y: Math.floor(Math.random() * 250)}
+        
+        if(temp.type == 'square' || temp.type == 'circle'){
+          temp.styl = {
+            width: temp.width + 'px',
+            height: temp.height + 'px',
+            backgroundColor:'#C9C9C9'
+          }
+          
+          temp.handleResize = (e,ui) => {
+              temp.width = temp.width+ui.deltaX < 55 ? 55 : temp.width+ui.deltaX;
+              temp.height = temp.height + ui.deltaY < 55 ? 55 : temp.height + ui.deltaY;
+              temp.styl.width = temp.width + 'px';
+              temp.styl.height = temp.height + 'px';
+          }
+        } else if(temp.type == 'trapez') {
+          temp.styl = {
+            width: '100px',
+            borderLeft: '35px solid transparent',
+            borderRight: '35px solid transparent',
+            borderBottom: '50px solid #C9C9C9',
+          }
+          temp.handleResize = (e,ui) => {
+            temp.width = temp.width+ui.deltaX < 115 ? 115 : temp.width+ui.deltaX;
+            temp.height = temp.height + ui.deltaY < 55 ? 55 : temp.height + ui.deltaY;
+            temp.styl.width = temp.width + 'px';
+            temp.styl.borderBottom = temp.height + 'px solid #C9C9C9';
+        }
+        } else if(temp.type == 'triangle'){
+          temp.styl = {
+            borderWidth: '0 25px 55px 25px'
+          }
+          temp.handleResize = (e,ui) => {
+            temp.width = temp.width+ui.deltaX < 50 ? 50 : temp.width+ui.deltaX;
+            temp.height = temp.height + ui.deltaY < 55 ? 55 : temp.height + ui.deltaY;
+            temp.styl.borderWidth = '0 ' + temp.width/2 + "px " + temp.height + "px " + temp.width/2 + "px";
+          }
+        }
+        
+        return [
+          ...state,
+          temp
+        ]
+      case 'REMOVE':
+        return [
+          ...state.slice(0, action.payload), ...state.slice(action.payload + 1)
+        ]
+      case 'CLEAR':
+        return []
+    }
+  }
   if (toOpen)
     return (
       
 
         <div className="innerModal">
-          <ModalHeader dropdown={{ dr: drop, openSelection: () => setDrop(!drop) }} dataImgs={dataImgs} control={control} tabs={{ modals: modals, control: modalControl }} createText={{ imprt: imprt, setImport: () => setImport(!imprt) }} />
+          <ModalHeader companyImgs={{ dr: drop, openSelection: () => setDrop(!drop) }} dataImgs={dataImgs} control={control} tabs={{ modals: modals, control: modalControl }} importObjects={{ imprt: imprt, setImport: () => setImport(!imprt) }} />
 
-          <Moodboard access={access} control={control} />
+          <Moodboard access={access} control={control} closeMenus={() => { setDrop(false); setImport(false); }}/>
         </div>
      
     );
 }
 
-function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
+function ModalHeader({ companyImgs, importObjects, dataImgs, control, tabs }) {
   //
   return (
-    <nav className="navbar" style={{ height: '40px', borderRadius: '20%' }}>
+    <nav className="navbar" style={{ height: '40px', borderRadius: '10%' }}>
 
 
       <div className="navbar-menu">
@@ -213,7 +272,7 @@ function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
             if (confirm(text) == true) {
               control.setImgs({ type: 'CLEAR' })
               control.setTexts({ type: 'CLEAR' })
-
+              control.setShapes({ type: 'CLEAR' })
             }
           }
           }>
@@ -226,10 +285,10 @@ function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
 
 
           <button className="button" onClick={() => {
-            if (dropdown.dr) {
-              dropdown.openSelection();
+            if (companyImgs.dr) {
+              companyImgs.openSelection();
             }
-            createText.setImport();
+            importObjects.setImport();
           }} >
             <span>Import</span>
             <span className="icon is-small">
@@ -237,13 +296,13 @@ function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
             </span>
           </button>
 
-          {createText.imprt && <ImportTextDrop control={control} closeImporting={createText.setImport} />}
+          {importObjects.imprt && <ImportTextDrop control={control} closeImporting={importObjects.setImport} />}
 
           <button className="button" aria-haspopup="true" aria-controls="dropdown-menu" onClick={() => {
-            if (createText.imprt) {
-              createText.setImport();
+            if (importObjects.imprt) {
+              importObjects.setImport();
             }
-            dropdown.openSelection()
+            companyImgs.openSelection()
           }}>
             <span>Company Images</span>
             <span className="icon is-small">
@@ -251,7 +310,7 @@ function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
             </span>
           </button>
 
-          {dropdown.dr && <Dropdown dataImgs={dataImgs} control={control.setImgs} />}
+          {companyImgs.dr && <Dropdown dataImgs={dataImgs} control={control.setImgs} />}
 
         </div>
       </div>
@@ -261,11 +320,12 @@ function ModalHeader({ dropdown, createText, dataImgs, control, tabs }) {
 }
 function ImportTextDrop({ control, closeImporting }) {
   const [inp, setInp] = useState("")
-
+  const [filename, setFilename] = useState("No file uploaded");
   return (
     <div className="dropdown is-active is-right" >
       <div className="dropdown-menu" id="dropdown-menu" role="menu">
         <div className="dropdown-content" >
+
           <div className="dropdown-item">
             <input className="input is-primary" type="text" placeholder="Enter text here" style={{ marginBottom: "15px" }} value={inp} onChange={e => setInp(e.target.value)} onKeyPress={(event) => {
               if (event.key === "Enter") {
@@ -279,17 +339,57 @@ function ImportTextDrop({ control, closeImporting }) {
               closeImporting();
             }}>Create</button>
           </div>
-          <hr style={{ padding: "1.1px", backgroundColor: '#0F1510' }}></hr>
+          <hr style={{ backgroundColor: '#0F1510' }} />
+
+          <div className="columns is-multiline is-variable is-4" style={{margin: '0px 15px'}}>
+            <button className='column is-one-third' onClick={() => control.setShapes({type: "ADD SHAPE", payload: 'square'})}>
+              <div style={{ height: '20px', width: '20px', border: '2px grey solid', backgroundColor: "grey", margin: '0px' }} ></div>
+            </button>
+            <button className='column is-one-third' onClick={() => control.setShapes({type: "ADD SHAPE", payload: 'circle'})}>
+              <div style={{ height: '20px', width: '20px', border: '2px grey solid', backgroundColor: "grey", margin: '0px', borderRadius: '50%'}} ></div>
+            </button>
+            <button className='column is-one-third' onClick={() => control.setShapes({type: "ADD SHAPE", payload: 'triangle'})}>
+              <div style={{ height: '0', width: '0', borderLeft: '12.5px solid transparent', borderRight: '12.5px solid transparent',	borderBottom: '25px solid grey', margin: '0px' }} ></div>
+            </button>
+            <button className='column is-one-third' onClick={() => control.setShapes({type: "ADD SHAPE", payload: 'trapez'})}>
+              <div style={{borderBottom: '20px solid grey',	borderLeft: '10px solid transparent',	borderRight: '10px solid transparent',	height: '0',	width: '30px'}} ></div>
+            </button>
+          </div>
+
+          
+
           <button className="button is-primary" style={{ margin: "10px 15px" }} onClick={() => {
-            control.setSwatches({ type: 'ADD', payload: "#" + Math.floor(Math.random()*16777215).toString(16)})
+            control.setSwatches({ type: 'ADD', payload: "#" + Math.floor(Math.random() * 16777215).toString(16) })
             closeImporting();
           }}>New Color Swatch</button>
+          <hr style={{ backgroundColor: '#0F1510' }} />
+
+          <div className="file is-centered is-small is-boxed is-primary has-name">
+            <label className="file-label">
+              <input className="file-input" type="file" name="resume" accept="image/*" onChange={(event) => { console.log(event); setFilename(event.target.value) }} />
+              <span className="file-cta">
+                <span className="file-icon">
+                  <i className="fas fa-upload"></i>
+                </span>
+                <span className="file-label">
+                  Upload Own Image
+                </span>
+              </span>
+              <span className="file-name">
+                {filename}
+              </span>
+            </label>
+          </div>
+          <hr style={{ backgroundColor: '#0F1510' }} />
+
+
+
         </div>
       </div>
     </div>
   )
 }
-function Moodboard({ access, control }) {
+function Moodboard({ access, control, closeMenus }) {
   const ref = useRef(null);
   const [st, setSt] = useState(0);
 
@@ -316,20 +416,27 @@ function Moodboard({ access, control }) {
           swt.y = swt.y + ui.deltaY;
         }
       })
+    } else if (type == "shp") {
+      access.shapes.map((shp, i) => {
+        if (index == i) {
+          shp.x = shp.x + ui.deltaX;
+          shp.y = shp.y + ui.deltaY;
+        }
+      })
     }
 
   }
   return (
-    <div className="expand" >
+    <div className="expand" onMouseEnter={closeMenus} >
 
       <Draggable bounds=".expand" >
-        <h1 className='draggable'>{access.imgs.length + access.texts.length + access.swatches.length}</h1>
+        <h1 className='draggable'>{access.imgs.length + access.texts.length + access.swatches.length + access.shapes.length}</h1>
       </Draggable>
 
       {access.texts.map((text, i) => {
 
         return (
-          <Draggable bounds={{ top: 0, left: -5, right: 10000, bottom: 10000 }} defaultClassName='column is-1 draggable' key={text.id} defaultPosition={{ x: text.x, y: text.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "txt")}>
+          <Draggable  bounds={{ top: 0, left: -5, right: 10000, bottom: 10000 }} defaultClassName='column is-1 draggable' key={text.id} defaultPosition={{ x: text.x, y: text.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "txt")}>
             <div>
               <h1 onDoubleClick={() => { control.setTexts({ type: 'REMOVE', payload: i }) }}>{text.item}</h1>
             </div>
@@ -357,28 +464,21 @@ function Moodboard({ access, control }) {
 
       })}
 
-      {access.imgs.map((img, i) => {
+      {access.shapes.map((shp,i) => {
         
         return (
           <React.Fragment >
-            <Draggable  defaultClassName='column draggable' key={img.uniqueId} defaultPosition={{ x: img.x, y: img.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "img")} >
-              <div>
-                <img src={img.image_path} alt="bruh" draggable={false} style={{ width: img.width }}/>
-                <button className='delete is-small'  onClick={() => control.setImgs({ type: 'REMOVE', payload: i })} />
+            <Draggable defaultClassName={shp.type + " draggable"} key={shp.uniqueId} position={{ x: shp.x, y: shp.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "shp")} >
+              <div style={shp.styl}  >
+
+                <button className='delete is-small' onClick={() => control.setShapes({ type: 'REMOVE', payload: i })} />
               </div>
             </Draggable>
 
-            <Draggable key={img.uniqueId + 'b52'} position={{ x: (img.x + img.width)*2, y: (img.y + img.width)*2 }} onDrag={(e, ui) => {
-              if ((img.width + ui.deltaX) < 100) {
-                img.width = 100;
-              } else if((img.width + ui.deltaX) > 500){
-                img.width = 500
-              } else {
-                img.width = (img.width + ui.deltaX);
-                setSt((n) => n + 1)
-              }
-
-            }} >
+            <Draggable key={shp.id + 'b52'} position={{ x: (shp.x + shp.width)*2, y: (shp.y + shp.height)*2 }} onDrag={(e, ui) => {
+              shp.handleResize(e,ui);
+              setSt((n) => n + 1)
+              }} >
               <button className='resizeButton '></button>
             </Draggable>
             
@@ -387,13 +487,36 @@ function Moodboard({ access, control }) {
         )
       })}
 
+      {access.imgs.map((img, i) => {
+
+        return (
+          <React.Fragment >
+            <Draggable defaultClassName='column draggable' key={img.uniqueId} defaultPosition={{ x: img.x, y: img.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "img")} >
+              <div>
+                <img src={img.image_path} alt="image not available" draggable={false} style={{ width: img.width }} />
+                <button className='delete is-small' onClick={() => control.setImgs({ type: 'REMOVE', payload: i })} />
+              </div>
+            </Draggable>
+
+            <Draggable key={img.uniqueId + 'b52'} position={{ x: (img.x + img.width) * 2, y: (img.y + img.width) * 2 }} onDrag={(e, ui) => {
+              if ((img.width + ui.deltaX) < 100) {
+                img.width = 100;
+              } else if ((img.width + ui.deltaX) > 500) {
+                img.width = 500
+              } else {
+                img.width = (img.width + ui.deltaX);
+                setSt((n) => n + 1)
+
+              }
+
+            }} >
+              <button className='resizeButton '></button>
+            </Draggable>
 
 
-
-
-
-
-
+          </React.Fragment>
+        )
+      })}
 
     </div>
   );
@@ -402,7 +525,7 @@ function Moodboard({ access, control }) {
 function Dropdown({ dataImgs, control }) {
 
   return (
-    <div className="dropdown is-active is-right" >
+    <div className="dropdown is-active is-hoverable is-right" >
       <div className="dropdown-menu" id="dropdown-menu" role="menu">
         <div className="dropdown-content dropwidth" >
           <div className="dropdown-item">

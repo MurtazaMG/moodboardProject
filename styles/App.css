@@ -94,5 +94,18 @@
   }
   .draggable {
     position: absolute;
+    cursor: move;
+   
   }
+  .triangle {
+    width: 0 ;
+    height: 0;
+    border-style: solid;
+    border-color: transparent transparent #C9C9C9 transparent;
+  }
+  .circle {
+    border-radius: 50%;
+  }
+
+  
   
