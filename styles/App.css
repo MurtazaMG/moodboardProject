@@ -67,10 +67,13 @@
     zoom: 0.5;
     
   }
-  .delete{
+  .shapesMenu{
+    zoom: 0.5;
+  }
+  .imgDel{
     zoom: 0.35;
     
-  } .delete:hover {
+  } .imgDel:hover {
     zoom: 1;
   }
   .categScroll{
@@ -101,10 +104,13 @@
     width: 0 ;
     height: 0;
     border-style: solid;
-    border-color: transparent transparent #C9C9C9 transparent;
+    
   }
   .circle {
     border-radius: 50%;
+  }
+  .colorPicker {
+    border-radius: 40%;
   }
 
   

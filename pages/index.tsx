@@ -5,10 +5,8 @@ import Draggable from 'react-draggable';
 
 import React, { useState, useReducer, useEffect, useRef } from 'react';
 import 'bulma/css/bulma.min.css';
-import useWindowDimensions from './windowDimensions';
-import Image from 'next/image';
+
 import { prisma } from '../db'
-import { cloneDeep } from 'lodash'
 
 function makeid(length) {
   var result = '';
@@ -168,13 +166,14 @@ function Modal({ modalControl, dataImgs, toOpen, modals }) {
   function addShapetoBoard(state, action){
     switch (action.type) {
       case 'ADD SHAPE':
-        const temp = {id: makeid(7), type: action.payload, styl: undefined, handleResize: null, width: 55, height: 55, x: Math.floor(Math.random() * 400), y: Math.floor(Math.random() * 250)}
+        const temp = {id: makeid(7), type: action.payload, styl: undefined, handleResize: null, properties: {bColor: 'black', bWidth: 0, bStyle: 'solid'}, width: 55, height: 55, x: Math.floor(Math.random() * 400), y: Math.floor(Math.random() * 250)}
         
         if(temp.type == 'square' || temp.type == 'circle'){
           temp.styl = {
             width: temp.width + 'px',
             height: temp.height + 'px',
-            backgroundColor:'#C9C9C9'
+            backgroundColor:'#C9C9C9',
+            border: temp.properties.bWidth + temp.properties.bColor + temp.properties.bStyle
           }
           
           temp.handleResize = (e,ui) => {
@@ -198,7 +197,8 @@ function Modal({ modalControl, dataImgs, toOpen, modals }) {
         }
         } else if(temp.type == 'triangle'){
           temp.styl = {
-            borderWidth: '0 25px 55px 25px'
+            borderWidth: '0 25px 55px 25px',
+            borderColor: 'transparent transparent #C9C9C9 transparent'
           }
           temp.handleResize = (e,ui) => {
             temp.width = temp.width+ui.deltaX < 50 ? 50 : temp.width+ui.deltaX;
@@ -381,7 +381,7 @@ function ImportTextDrop({ control, closeImporting }) {
             </label>
           </div>
           <hr style={{ backgroundColor: '#0F1510' }} />
-
+          
 
 
         </div>
@@ -392,6 +392,7 @@ function ImportTextDrop({ control, closeImporting }) {
 function Moodboard({ access, control, closeMenus }) {
   const ref = useRef(null);
   const [st, setSt] = useState(0);
+  const borderStyles = ['solid','dotted','dashed','double']
 
   const handleDrag = (e, ui, index, type) => {
     setSt((n) => n + 1);
@@ -445,7 +446,7 @@ function Moodboard({ access, control, closeMenus }) {
 
       })}
       {access.swatches.map((color, i) => {
-
+        
         return (
           <Draggable bounds={{ top: 10, left: 0, right: 10000, bottom: 10000 }} defaultClassName='column is-2 draggable' key={color.id} defaultPosition={{ x: color.x, y: color.y + i * 10 }} onDrag={(e, ui) => handleDrag(e, ui, i, "swt")}>
 
@@ -471,7 +472,49 @@ function Moodboard({ access, control, closeMenus }) {
             <Draggable defaultClassName={shp.type + " draggable"} key={shp.uniqueId} position={{ x: shp.x, y: shp.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "shp")} >
               <div style={shp.styl}  >
 
-                <button className='delete is-small' onClick={() => control.setShapes({ type: 'REMOVE', payload: i })} />
+                <div className="dropdown is-hoverable">
+                  <div className="dropdown-trigger">
+                    <button className="shapesMenu" aria-haspopup="true" aria-controls="dropdown-menu4">
+                    </button>
+                  </div>
+                  <div className="dropdown-menu" id="dropdown-menu4" role="menu">
+                    <div className="dropdown-content">
+                      <div className="dropdown-item columns">
+                        <button className='delete column is-one-fifth' onClick={() => control.setShapes({ type: 'REMOVE', payload: i })} />
+                        <input type='color' className='column button is-small is-one-fifth colorPicker' onChange={(e) => {shp.styl.backgroundColor = e.target.value; setSt((n) => n + 1);}}/>
+                      </div>
+                      <div className="dropdown-item columns">
+                        <input type='color' className='column button is-small is-one-fifth colorPicker' onChange={(e) => {shp.properties.bColor = e.target.value; shp.styl.border = `${shp.properties.bWidth}px ${shp.properties.bColor} ${shp.properties.bStyle}`; setSt((n) => n + 1);}}/>
+                        <button className='button is-small' onClick={() => { 
+                          if(shp.properties.bWidth < 11){
+                            shp.properties.bWidth += 1;
+                            shp.styl.border = `${shp.properties.bWidth}px ${shp.properties.bColor} ${shp.properties.bStyle}`;
+                            setSt((n) => n + 1);
+                          }
+                        }}>&#8593;</button>
+                        <button className='button is-small' onClick={() => { 
+                          if(shp.properties.bWidth > 0){
+                            shp.properties.bWidth -= 1;
+                            shp.styl.border = `${shp.properties.bWidth}px ${shp.properties.bColor} ${shp.properties.bStyle}`;
+                            setSt((n) => n + 1);
+                          }
+                        }}>&#8595;</button>
+                        
+                        <button className='button is-small' onClick={() =>{
+                          const current = shp.properties.bStyle;
+                          if(borderStyles.indexOf(current) == borderStyles.length - 1){
+                            shp.properties.bStyle = borderStyles[0];
+                          } else {
+                            shp.properties.bStyle = borderStyles[borderStyles.indexOf(current) + 1];
+                          }
+                          shp.styl.border = `${shp.properties.bWidth}px ${shp.properties.bColor} ${shp.properties.bStyle}`;
+                          setSt((n) => n+1);
+                        }}>Change Style</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
               </div>
             </Draggable>
 
@@ -494,7 +537,7 @@ function Moodboard({ access, control, closeMenus }) {
             <Draggable defaultClassName='column draggable' key={img.uniqueId} defaultPosition={{ x: img.x, y: img.y }} onDrag={(e, ui) => handleDrag(e, ui, i, "img")} >
               <div>
                 <img src={img.image_path} alt="image not available" draggable={false} style={{ width: img.width }} />
-                <button className='delete is-small' onClick={() => control.setImgs({ type: 'REMOVE', payload: i })} />
+                <button className='delete is-small imgDel' onClick={() => control.setImgs({ type: 'REMOVE', payload: i })} />
               </div>
             </Draggable>
 
